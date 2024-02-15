@@ -12,6 +12,10 @@ $ mv docker-express/Dockerfile docker-express/.dockerignore .
 $ rm -rf docker-express
 $ docker build -t express-api .
 ```
+Whe running a container instance map the host port (e.g., 80) to the container port 8080
+```
+$ docker run --detach --port 80:8080 express-api
+```
 
 ## Notes
 To display a healthy status for a Docker container when running ```$ docker ps``` the Express application must have an endpoint to '/' (without any prefix).
