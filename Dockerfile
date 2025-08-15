@@ -7,15 +7,11 @@ EXPOSE 8080
 FROM base AS dev
 
 ENV NODE_ENV=development
+ENV YARN_CACHE_FOLDER=/app/.yarn-cache/auth-api
 
-ENV YARN_CACHE_FOLDER=/app/.yarn-cache
-
-RUN --mount=type=bind,source=package.json,target=package.json \
-    --mount=type=bind,source=yarn.lock,target=yarn.lock \
-    --mount=type=cache,target=${YARN_CACHE_FOLDER} \
-    yarn install
-
-COPY --chown=node:node . .
+# Solo instala dependencias
+COPY package.json yarn.lock ./
+RUN yarn install
 
 USER node
 
@@ -26,7 +22,7 @@ FROM base AS build
 
 ENV NODE_ENV=production
 
-ENV YARN_CACHE_FOLDER=/app/.yarn-cache
+ENV YARN_CACHE_FOLDER=/app/.yarn-cache/auth-api
 
 RUN --mount=type=bind,source=package.json,target=package.json \
     --mount=type=bind,source=yarn.lock,target=yarn.lock \
@@ -43,7 +39,7 @@ WORKDIR /app
 
 USER node
 
-ENV YARN_CACHE_FOLDER=/app/.yarn-cache
+ENV YARN_CACHE_FOLDER=/app/.yarn-cache/auth-api
 
 COPY --from=build --chown=node:node /app ./
 
