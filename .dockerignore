@@ -3,3 +3,5 @@ test
 tests
 .env
 build
+.yarn-cache
+dist

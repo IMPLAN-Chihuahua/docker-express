@@ -1,53 +1,41 @@
-FROM node:lts-bookworm AS base
+FROM node:24-trixie AS base
 
 WORKDIR /app
 
-EXPOSE 8080
 
-FROM base AS dev
+FROM base AS deps
 
-ENV NODE_ENV=development
+COPY package.json yarn.lock ./
 
-ENV YARN_CACHE_FOLDER=/app/.yarn-cache
+RUN yarn install --frozen-lockfile --production
 
-RUN --mount=type=bind,source=package.json,target=package.json \
-    --mount=type=bind,source=yarn.lock,target=yarn.lock \
-    --mount=type=cache,target=${YARN_CACHE_FOLDER} \
-    yarn install
+
+FROM deps AS build
 
 COPY --chown=node:node . .
 
-USER node
-
-CMD ["npm", "run", "dev"]
+RUN ["npm", "run", "build"]
 
 
-FROM base AS build
-
-ENV NODE_ENV=production
-
-ENV YARN_CACHE_FOLDER=/app/.yarn-cache
-
-RUN --mount=type=bind,source=package.json,target=package.json \
-    --mount=type=bind,source=yarn.lock,target=yarn.lock \
-    --mount=type=cache,target=${YARN_CACHE_FOLDER} yarn install --frozen-lockfile
-
-COPY . .
-
-RUN yarn add typescript tsc ts-node && yarn build
-
-
-FROM node:lts-bookworm-slim AS prod
+FROM node:24-trixie-slim AS prod
 
 WORKDIR /app
 
+ENV NODE_ENV=production
+
+COPY --from=deps --chown=node:node /app/node_modules ./node_modules
+COPY --from=deps --chown=node:node /app/package.json /app/yarn.lock ./
+
+COPY --from=build --chown=node:node /app/build ./build
+
+RUN mkdir -p ./uploads && chown node:node ./uploads
+RUN mkdir -p ./tmp && chown node:node ./tmp
+
 USER node
 
-ENV YARN_CACHE_FOLDER=/app/.yarn-cache
-
-COPY --from=build --chown=node:node /app ./
+EXPOSE 8080
 
 HEALTHCHECK --interval=1m --timeout=3s --retries=5 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:8080 || exit 1
 
-CMD ["yarn", "run", "start"]
+CMD ["npm", "start"]
