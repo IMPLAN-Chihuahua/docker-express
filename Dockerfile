@@ -9,6 +9,18 @@ COPY package.json yarn.lock ./
 
 RUN yarn install --frozen-lockfile --production
 
+FROM base AS dev-deps
+COPY package.json yarn.lock ./
+RUN yarn install --frozen-lockfile
+
+FROM dev-deps AS dev
+COPY --chown=node:node . .
+RUN mkdir -p ./uploads && chown node:node ./uploads
+RUN mkdir -p ./tmp && chown node:node ./tmp
+RUN mkdir -p ./public && chown node:node ./public
+USER node
+EXPOSE 8080
+CMD ["yarn", "dev"]
 
 FROM deps AS build
 
@@ -30,6 +42,7 @@ COPY --from=build --chown=node:node /app/build ./build
 
 RUN mkdir -p ./uploads && chown node:node ./uploads
 RUN mkdir -p ./tmp && chown node:node ./tmp
+RUN mkdir -p ./public && chown node:node ./public
 
 USER node
 
